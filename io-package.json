@@ -1,0 +1,83 @@
+{
+  "common": {
+    "name": "artnet-dmx-monitor",
+    "version": "1.0.0",
+    "titleLang": {
+      "en": "Art-Net DMX Monitor",
+      "de": "Art-Net DMX Monitor"
+    },
+    "desc": {
+      "en": "Receive Art-Net ArtDMX packets and expose individual DMX channels",
+      "de": "Art-Net ArtDMX-Pakete empfangen und einzelne DMX-Kanäle bereitstellen"
+    },
+    "authors": [
+      "xxLightbeamerxx"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "type": "lighting",
+    "connectionType": "local",
+    "dataSource": "push",
+    "compact": true,
+    "enabled": true,
+    "messagebox": false,
+    "materialize": false,
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=5.0.0"
+      }
+    ],
+    "icon": "artnet-dmx-monitor.png"
+  },
+  "native": {
+    "bind": "0.0.0.0",
+    "port": 6454,
+    "universe": 0,
+    "startChannel": 1,
+    "channelCount": 64,
+    "onlyChanges": true,
+    "timeoutSeconds": 10,
+    "respondToPoll": true,
+    "pollShortName": "ioB ArtNet Mon"
+  },
+  "objects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": "Art-Net UDP listener ready",
+        "type": "boolean",
+        "role": "indicator.reachable",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.receiving",
+      "type": "state",
+      "common": {
+        "name": "ArtDMX packets received recently",
+        "type": "boolean",
+        "role": "indicator.reachable",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    }
+  ]
+}

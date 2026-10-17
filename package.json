@@ -1,0 +1,44 @@
+{
+  "name": "iobroker.artnet-dmx-monitor",
+  "version": "1.0.0",
+  "description": "Art-Net DMX monitor with optional ArtPollReply device discovery for ioBroker",
+  "main": "main.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.2.3"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check main.js && node --check lib/artnet.js && node --check lib/config.js && node --check lib/poll.js"
+  },
+  "keywords": [
+    "ioBroker",
+    "artnet",
+    "dmx",
+    "monitor"
+  ],
+  "author": "xxLightbeamerxx",
+  "contributors": [
+    "Original Art-Net Recorder project: Bannsaenger (see LICENSE and README)"
+  ],
+  "homepage": "https://github.com/xxLightbeamerxx/ioBroker.artnet-dmx-monitor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xxLightbeamerxx/ioBroker.artnet-dmx-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xxLightbeamerxx/ioBroker.artnet-dmx-monitor/issues"
+  },
+  "files": [
+    "main.js",
+    "io-package.json",
+    "admin/",
+    "lib/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ]
+}
