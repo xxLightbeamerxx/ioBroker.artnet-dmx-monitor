@@ -68,7 +68,7 @@ The ioBroker Admin configuration provides **English and German** translations, f
 | Channel count | `64` | Number of channel states to expose (`1–512`, up to channel 512) |
 | Write only changes | `true` | Avoid redundant state writes |
 | Receive timeout | `10` seconds | Time without a matching packet before `info.receiving` becomes false |
-| Respond to ArtPoll | `true` | Reply to valid ArtPoll discovery requests |
+| Respond to ArtPoll | `false` | Reply to valid ArtPoll discovery requests |
 | ArtPoll short name | `ioB ArtNet Mon` | ASCII device name (1–17 characters) |
 
 ### Example: monitoring 64 DMX channels
