@@ -41,7 +41,7 @@
     "channelCount": 64,
     "onlyChanges": true,
     "timeoutSeconds": 10,
-    "respondToPoll": true,
+    "respondToPoll": false,
     "pollShortName": "ioB ArtNet Mon"
   },
   "objects": [
