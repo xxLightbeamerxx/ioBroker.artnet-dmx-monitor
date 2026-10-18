@@ -1,6 +1,6 @@
 {
   "name": "iobroker.artnet-dmx-monitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Art-Net DMX monitor with optional ArtPollReply device discovery for ioBroker",
   "main": "main.js",
   "license": "MIT",

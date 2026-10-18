@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Art-Net DMX Monitor v1.0.0
+ * Art-Net DMX Monitor v1.0.1
  */
 const dgram = require('node:dgram');
 const { parseArtPoll, createArtPollReply, pickLocalIp } = require('./lib/poll');
 const utils = require('@iobroker/adapter-core');
 const { parseArtDmx } = require('./lib/artnet');
-const { channelId, channelsToRemove, validateConfig, overlaps } = require('./lib/config');
+const { channelId, channelsToRemove, obsoleteUniverses, validateConfig, overlaps } = require('./lib/config');
 
 class ArtnetDmxMonitor extends utils.Adapter {
     constructor(options) {
@@ -40,18 +40,54 @@ class ArtnetDmxMonitor extends utils.Adapter {
 
     /** Creates configured channel states and removes channels that are no longer selected. */
     async syncChannelObjects() {
-        await this.setObjectNotExistsAsync('channel', {
+        // Remove old universe branches BEFORE creating the currently configured one.
+        // Query channel definitions only in this adapter instance, never other adapters.
+        const objectPrefix = `${this.namespace}.`;
+        const channelView = await this.getObjectViewAsync('system', 'channel', {
+            startkey: objectPrefix,
+            endkey: `${objectPrefix}\uffff`,
+        });
+        const oldUniverses = obsoleteUniverses(
+            (channelView.rows || []).map(row => row.id), this.namespace, this.universe,
+        );
+        for (const oldUniverse of oldUniverses) {
+            const prefix = `${this.namespace}.${oldUniverse}.channel.`;
+            const stateView = await this.getObjectViewAsync('system', 'state', {
+                startkey: prefix,
+                endkey: `${prefix}\uffff`,
+            });
+            for (const row of stateView.rows || []) {
+                if (typeof row.id !== 'string' || !row.id.startsWith(prefix)) continue;
+                const relativeId = row.id.slice(this.namespace.length + 1);
+                try { await this.delStateAsync(relativeId); } catch (err) {
+                    this.log.debug(`Old state ${relativeId} already empty: ${err.message}`);
+                }
+                await this.delObjectAsync(relativeId);
+            }
+            // Delete the container objects last. No recursive deletion or broad namespace wipes.
+            const oldChannelId = `${oldUniverse}.channel`;
+            if ((channelView.rows || []).some(row => row.id === `${this.namespace}.${oldChannelId}`)) {
+                await this.delObjectAsync(oldChannelId);
+            }
+            await this.delObjectAsync(oldUniverse);
+            this.log.info(`Removed obsolete Art-Net universe ${oldUniverse}.`);
+        }
+
+        await this.setObjectNotExistsAsync(String(this.universe), {
+            type: 'channel', common: { name: `Art-Net universe ${this.universe}` }, native: {},
+        });
+        await this.setObjectNotExistsAsync(`${this.universe}.channel`, {
             type: 'channel', common: { name: 'DMX channels' }, native: {},
         });
 
         // Query only state objects under the channel.* branch of this adapter instance.
-        const prefix = `${this.namespace}.channel.`;
+        const prefix = `${this.namespace}.${this.universe}.channel.`;
         const view = await this.getObjectViewAsync('system', 'state', {
             startkey: prefix,
             endkey: `${prefix}\uffff`,
         });
         const existing = (view.rows || []).map(row => row.id).filter(id => typeof id === 'string' && id.startsWith(prefix));
-        const stale = channelsToRemove(existing, this.namespace, this.startChannel, this.channelCount);
+        const stale = channelsToRemove(existing, this.namespace, this.universe, this.startChannel, this.channelCount);
         for (const fullId of stale) {
             const relativeId = fullId.slice(this.namespace.length + 1);
             // delStateAsync removes the state value; delObjectAsync removes its object definition.
@@ -64,7 +100,7 @@ class ArtnetDmxMonitor extends utils.Adapter {
         if (stale.length) this.log.info(`${stale.length} obsolete DMX channel states removed.`);
 
         for (let ch = this.startChannel; ch < this.startChannel + this.channelCount; ch++) {
-            await this.ensureState(channelId(ch), `DMX channel ${ch}`, 'number', 'value', 0, { min: 0, max: 255 });
+            await this.ensureState(channelId(this.universe, ch), `DMX channel ${ch}`, 'number', 'value', 0, { min: 0, max: 255 });
         }
     }
 
@@ -153,6 +189,7 @@ class ArtnetDmxMonitor extends utils.Adapter {
                 this.socket = null;
             });
             this.socket.on('listening', () => {
+                if (this.stopping) return;
                 void this.setStateAsync('info.connection', { val: true, ack: true }).catch(e => this.log.warn(`Could not set receiver readiness: ${e.message}`));
                 this.log.info(`Art-Net DMX Monitor listening: ${this.bindAddress}:${this.port}, Universe ${this.universe}, channels ${this.startChannel}–${this.startChannel + this.channelCount - 1}`);
             });
@@ -208,12 +245,13 @@ class ArtnetDmxMonitor extends utils.Adapter {
             const value = packet.data[ch - 1];
             if (this.onlyChanges && this.lastValues[ch] === value) continue;
             this.lastValues[ch] = value;
-            this.setState(channelId(ch), { val: value, ack: true });
+            this.setState(channelId(this.universe, ch), { val: value, ack: true });
         }
     }
 
     /** Refresh connection status and diagnostics at most once per second. */
     updateHealth() {
+        if (this.stopping) return;
         const online = this.lastSeenAt > 0 && Date.now() - this.lastSeenAt <= this.timeoutMs;
         if (online !== this.dmxReceiving) {
             this.dmxReceiving = online;
@@ -229,8 +267,8 @@ class ArtnetDmxMonitor extends utils.Adapter {
     /** Shut down cleanly so the UDP port is released for the next start. */
     onUnload(callback) {
         this.stopping = true;
-        void this.setStateAsync('info.connection', { val: false, ack: true }).catch(e => this.log.debug(e.message));
-        void this.setStateAsync('info.receiving', { val: false, ack: true }).catch(e => this.log.debug(e.message));
+        // Do not write info states here: during adapter removal their objects may
+        // already have been deleted by the controller.
         for (const timer of this.pollTimers) clearTimeout(timer);
         this.pollTimers.clear();
         if (this.healthTimer) clearInterval(this.healthTimer);

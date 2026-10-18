@@ -59,6 +59,9 @@ The ioBroker Admin configuration provides **English and German** translations, f
 
 ## Configuration
 
+DMX channel states are grouped by selected Art-Net universe (e.g. `artnet-dmx-monitor.0.0.channel.001`). This prepares the object hierarchy for potential multi-universe support in a future version; **v1.0.1 still receives only one configured universe per instance**.
+
+
 | Option | Default | Description |
 | --- | --- | --- |
 | Bind address | `0.0.0.0` | Local IPv4 interface to receive packets on |
@@ -77,12 +80,13 @@ With **First channel = 1** and **Channel count = 64**, states are created under:
 
 ```text
 artnet-dmx-monitor.0
-├── channel
-│   ├── 001
-│   ├── 002
-│   ├── 003
-│   ├── ...
-│   └── 064
+├── 0                              # Art-Net universe 0
+│   └── channel
+│       ├── 001
+│       ├── 002
+│       ├── 003
+│       ├── ...
+│       └── 064
 └── info
     ├── connection
     ├── receiving
@@ -105,8 +109,8 @@ Individual channel states expose DMX values in the range `0–255`. Only values 
 
 The adapter manages its own channel objects based on the selected range. If the channel count changes from **512 to 32** (with first channel set to 1), then after restarting the adapter:
 
-- `channel.001` through `channel.032` remain.
-- `channel.033` through `channel.512` are removed, including their stored state values.
+- `0.channel.001` through `0.channel.032` remain (for universe 0).
+- `0.channel.033` through `0.channel.512` are removed, including their stored state values.
 
 Changing the first channel likewise removes objects outside the newly selected range. **Do not store irreplaceable information in generated channel states.**
 
