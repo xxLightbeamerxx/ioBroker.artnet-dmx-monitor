@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "artnet-dmx-monitor",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "titleLang": {
       "en": "Art-Net DMX Monitor",
       "de": "Art-Net DMX Monitor"
@@ -31,7 +31,8 @@
         "js-controller": ">=5.0.0"
       }
     ],
-    "icon": "artnet-dmx-monitor.png"
+    "icon": "artnet-dmx-monitor.png",
+    "readme": "https://github.com/xxLightbeamerxx/ioBroker.artnet-dmx-monitor#readme"
   },
   "native": {
     "bind": "0.0.0.0",
